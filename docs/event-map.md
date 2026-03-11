@@ -1,6 +1,6 @@
 # Event map from monolith to statistic-service
 
-This document fixes the minimal event contract that the monolith must send to the statistics service.
+This document fixes the event contract that the monolith should send to the statistics service.
 
 ## Minimal required event set
 
@@ -14,8 +14,18 @@ This document fixes the minimal event contract that the monolith must send to th
 | LKA requests | `request.lka.sent` | required | `platform`, `organizationId`, `userId`, `requestType` |
 | Provider requests | `request.provider.sent` | required | `platform`, `organizationId`, `userId`, `providerId`, `requestType` |
 
+## Second-wave events for business metrics
+
+| Domain | Event name | Purpose |
+|---|---|---|
+| Account lifecycle | `user.created` | user base dynamics and conversion |
+| Account lifecycle | `user.activated` | activation funnel |
+| Account lifecycle | `user.deleted` | active base decay |
+| Personal accounts | `account.linked` | conversion and linked-account dynamics |
+| Personal accounts | `account.unlinked` | linked-account dynamics |
+
 ## Notes
 
-- These events are expected on the internal endpoint `POST /internal/events`.
-- `auth.login.failed` is optional but recommended for diagnostics and conversion analysis.
-- `payload.paymentType` must be passed inside `payload` JSON object of the ingest DTO.
+- Events are sent to internal endpoint `POST /internal/events`.
+- `auth.login.failed` is optional but useful for diagnostics and conversion analytics.
+- `payment.success` should always provide `payload.paymentType`.

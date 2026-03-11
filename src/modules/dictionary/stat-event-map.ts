@@ -5,7 +5,12 @@ export type StatEventName =
   | 'meter.reading.sent'
   | 'receipt.downloaded'
   | 'request.lka.sent'
-  | 'request.provider.sent';
+  | 'request.provider.sent'
+  | 'user.created'
+  | 'user.activated'
+  | 'user.deleted'
+  | 'account.linked'
+  | 'account.unlinked';
 
 export type StatEventDimension =
   | 'platform'
@@ -65,5 +70,36 @@ export const STAT_EVENT_MAP: readonly StatEventMapItem[] = [
     category: 'request',
     requiredDimensions: ['platform', 'organizationId', 'userId', 'providerId', 'requestType'],
     optional: false,
+  },
+
+  {
+    eventName: 'user.created',
+    category: 'request',
+    requiredDimensions: ['organizationId', 'userId'],
+    optional: true,
+  },
+  {
+    eventName: 'user.activated',
+    category: 'request',
+    requiredDimensions: ['organizationId', 'userId'],
+    optional: true,
+  },
+  {
+    eventName: 'user.deleted',
+    category: 'request',
+    requiredDimensions: ['organizationId', 'userId'],
+    optional: true,
+  },
+  {
+    eventName: 'account.linked',
+    category: 'request',
+    requiredDimensions: ['organizationId', 'userId'],
+    optional: true,
+  },
+  {
+    eventName: 'account.unlinked',
+    category: 'request',
+    requiredDimensions: ['organizationId', 'userId'],
+    optional: true,
   },
 ];

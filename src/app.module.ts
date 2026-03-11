@@ -8,6 +8,7 @@ import { validateEnvironment } from './config/env.validation';
 import { DictionaryModule } from './modules/dictionary/dictionary.module';
 import { HealthModule } from './modules/health/health.module';
 import { StatsAggregateModule } from './modules/stats-aggregate/stats-aggregate.module';
+import { StatsBusinessModule } from './modules/stats-business/stats-business.module';
 import { StatsIngestModule } from './modules/stats-ingest/stats-ingest.module';
 import { StatsReportModule } from './modules/stats-report/stats-report.module';
 
@@ -37,6 +38,7 @@ import { StatsReportModule } from './modules/stats-report/stats-report.module';
     DictionaryModule,
     StatsIngestModule,
     StatsAggregateModule,
+    StatsBusinessModule,
     StatsReportModule,
   ],
 })
