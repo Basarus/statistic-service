@@ -9,6 +9,7 @@ Statistics microservice scaffold with event storage and aggregation data model.
 - Global request validation (`ValidationPipe`)
 - Swagger documentation (`/docs`)
 - Health endpoint (`GET /health`)
+- Internal ingestion endpoint (`POST /internal/events`) protected with `x-api-key`
 - Data model entities for events, daily/monthly aggregates, metrics, and job state
 - TypeORM migration for `stat_event`, `stat_aggregate_daily`, `stat_aggregate_monthly`, `stat_metric`, `stat_job_state`
 
@@ -30,4 +31,5 @@ DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=postgres
 DB_NAME=statistic_service
+INTERNAL_API_KEY=change-me
 ```

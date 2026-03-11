@@ -29,8 +29,8 @@ export class StatAggregateDailyEntity {
   @Column({ type: 'date' })
   date!: string;
 
-  @Column({ type: 'uuid', name: 'organization_id' })
-  organizationId!: string;
+  @Column({ type: 'bigint', name: 'organization_id' })
+  organizationId!: number;
 
   @Column({ type: 'varchar', length: 100, name: 'metric_code' })
   metricCode!: string;
@@ -44,8 +44,8 @@ export class StatAggregateDailyEntity {
   @Column({ type: 'varchar', length: 50, name: 'dimension_request_type', nullable: true })
   dimensionRequestType!: string | null;
 
-  @Column({ type: 'uuid', name: 'dimension_provider_id', nullable: true })
-  dimensionProviderId!: string | null;
+  @Column({ type: 'bigint', name: 'dimension_provider_id', nullable: true })
+  dimensionProviderId!: number | null;
 
   @Column({ type: 'varchar', length: 50, name: 'dimension_service_type', nullable: true })
   dimensionServiceType!: string | null;

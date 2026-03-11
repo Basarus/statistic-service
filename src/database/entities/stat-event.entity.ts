@@ -39,8 +39,8 @@ export class StatEventEntity {
   @Column({ type: 'smallint' })
   hour!: number;
 
-  @Column({ type: 'uuid', name: 'organization_id' })
-  organizationId!: string;
+  @Column({ type: 'bigint', name: 'organization_id' })
+  organizationId!: number;
 
   @Column({ type: 'uuid', name: 'user_id', nullable: true })
   userId!: string | null;
@@ -60,8 +60,8 @@ export class StatEventEntity {
   @Column({ type: 'varchar', length: 50, name: 'request_type', nullable: true })
   requestType!: string | null;
 
-  @Column({ type: 'uuid', name: 'provider_id', nullable: true })
-  providerId!: string | null;
+  @Column({ type: 'bigint', name: 'provider_id', nullable: true })
+  providerId!: number | null;
 
   @Column({ type: 'varchar', length: 50, name: 'service_type', nullable: true })
   serviceType!: string | null;

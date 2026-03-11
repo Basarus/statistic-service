@@ -1,7 +1,7 @@
 const numberPattern = /^\d+$/;
 
 export function validateEnvironment(config: Record<string, unknown>) {
-  const required = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+  const required = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'INTERNAL_API_KEY'];
 
   for (const key of required) {
     if (!config[key]) {
