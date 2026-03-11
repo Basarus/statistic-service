@@ -12,6 +12,7 @@ Statistics microservice scaffold with event storage and aggregation data model.
 - Internal ingestion endpoint (`POST /internal/events`) protected with `x-api-key`
 - Data model entities for events, daily/monthly aggregates, metrics, and job state
 - TypeORM migration for `stat_event`, `stat_aggregate_daily`, `stat_aggregate_monthly`, `stat_metric`, `stat_job_state`
+- Event map documentation for monolith integration (`docs/event-map.md`)
 
 ## Run
 

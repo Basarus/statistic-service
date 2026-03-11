@@ -153,8 +153,8 @@ export class CreateStatisticsSchema1710000000000 implements MigrationInterface {
         ('login_by_auth_method', 'Login by auth method', 'Successful user logins grouped by auth method', 'auth.login.success', 'unique_users', true),
         ('payment_success', 'Payment success', 'Successful payments', 'payment.success', 'count', true),
         ('meter_reading_success', 'Meter reading success', 'Successful meter reading submissions', 'meter.reading.sent', 'count', true),
-        ('receipt_download', 'Receipt download', 'Downloaded receipts', 'receipt.download', 'count', true),
-        ('request_sent_lka', 'LKA request sent', 'Requests sent from LKA', 'request.sent', 'count', true),
+        ('receipt_download', 'Receipt download', 'Downloaded receipts', 'receipt.downloaded', 'count', true),
+        ('request_sent_lka', 'LKA request sent', 'Requests sent from LKA', 'request.lka.sent', 'count', true),
         ('request_sent_provider', 'Provider request sent', 'Requests sent to provider systems', 'request.provider.sent', 'count', true)
       ON CONFLICT (code) DO NOTHING
     `);
