@@ -1,7 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import * as request from 'supertest';
+import request from 'supertest';
 
 import { StatEventWriteRepository } from '../src/modules/stats-ingest/repositories/stat-event-write.repository';
 import { StatsIngestAuthGuard } from '../src/modules/stats-ingest/stats-ingest.auth.guard';
