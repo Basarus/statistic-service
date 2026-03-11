@@ -1,66 +1,50 @@
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
-import { DataSource } from 'typeorm';
 
-import { StatBusinessSnapshotEntity } from '../../database/entities/stat-business-snapshot.entity';
+import { StatsBusinessRepository } from './repositories/stats-business.repository';
 import { StatsBusinessService } from './stats-business.service';
 
 describe('StatsBusinessService', () => {
   let service: StatsBusinessService;
-  const dataSourceMock = { query: jest.fn() };
   const repositoryMock = {
-    createQueryBuilder: jest.fn(),
-    insert: jest.fn(),
-    into: jest.fn(),
-    values: jest.fn(),
-    execute: jest.fn(),
-    select: jest.fn(),
-    addSelect: jest.fn(),
-    where: jest.fn(),
-    andWhere: jest.fn(),
-    orderBy: jest.fn(),
-    addOrderBy: jest.fn(),
-    limit: jest.fn(),
-    getRawOne: jest.fn(),
-    getRawMany: jest.fn(),
+    upsertSnapshot: jest.fn(),
+    findSnapshots: jest.fn(),
+    getConversionRows: jest.fn(),
+    getLatestInactiveUsers: jest.fn(),
+    buildInactiveUsersSnapshot: jest.fn(),
+    buildPaymentTypeSnapshot: jest.fn(),
+    buildAuthMethodSnapshot: jest.fn(),
   };
 
   beforeEach(async () => {
-    dataSourceMock.query.mockReset();
-    for (const key of Object.keys(repositoryMock)) {
-      (repositoryMock as Record<string, jest.Mock>)[key].mockReset();
-      (repositoryMock as Record<string, jest.Mock>)[key].mockReturnValue(repositoryMock);
-    }
+    Object.values(repositoryMock).forEach((fn) => fn.mockReset());
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StatsBusinessService,
-        { provide: DataSource, useValue: dataSourceMock },
-        { provide: getRepositoryToken(StatBusinessSnapshotEntity), useValue: repositoryMock },
+        {
+          provide: StatsBusinessRepository,
+          useValue: repositoryMock,
+        },
       ],
     }).compile();
 
     service = module.get<StatsBusinessService>(StatsBusinessService);
   });
 
-  it('builds inactive users snapshot via SQL projection', async () => {
-    dataSourceMock.query.mockResolvedValue([]);
-
+  it('builds inactive users snapshot via repository projection', async () => {
+    repositoryMock.buildInactiveUsersSnapshot.mockResolvedValue(undefined);
     await service.buildInactiveUsersSnapshot();
-
-    expect(dataSourceMock.query).toHaveBeenCalledWith(expect.stringContaining('users_inactive_6m'));
+    expect(repositoryMock.buildInactiveUsersSnapshot).toHaveBeenCalled();
   });
 
-  it('builds payment type snapshot via SQL projection', async () => {
-    dataSourceMock.query.mockResolvedValue([]);
-
+  it('builds payment type snapshot via repository projection', async () => {
+    repositoryMock.buildPaymentTypeSnapshot.mockResolvedValue(undefined);
     await service.buildPaymentTypeSnapshot();
-
-    expect(dataSourceMock.query).toHaveBeenCalledWith(expect.stringContaining('payment_type_count'));
+    expect(repositoryMock.buildPaymentTypeSnapshot).toHaveBeenCalled();
   });
 
   it('returns conversion response', async () => {
-    dataSourceMock.query.mockResolvedValue([
+    repositoryMock.getConversionRows.mockResolvedValue([
       { event_name: 'user.created', users: '10' },
       { event_name: 'account.linked', users: '7' },
       { event_name: 'auth.login.success', users: '6' },
@@ -74,6 +58,18 @@ describe('StatsBusinessService', () => {
       linkedAccountsUsers: 7,
       loggedInUsers: 6,
       paidUsers: 3,
+    });
+  });
+
+  it('returns zero conversion values when no data exists', async () => {
+    repositoryMock.getConversionRows.mockResolvedValue([]);
+    await expect(
+      service.getConversion({ organizationId: 10, dateFrom: '2026-03-01', dateTo: '2026-03-31' }),
+    ).resolves.toEqual({
+      registeredUsers: 0,
+      linkedAccountsUsers: 0,
+      loggedInUsers: 0,
+      paidUsers: 0,
     });
   });
 });

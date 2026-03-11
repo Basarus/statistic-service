@@ -1,18 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 import { StatEventEntity } from '../../database/entities/stat-event.entity';
 import { CreateStatEventDto } from './dto/create-stat-event.dto';
+import { StatEventWriteRepository } from './repositories/stat-event-write.repository';
 
 @Injectable()
 export class StatsIngestService {
-  constructor(
-    @InjectRepository(StatEventEntity)
-    private readonly statEventRepository: Repository<StatEventEntity>,
-  ) {}
+  private readonly forbiddenPayloadKeyPatterns = ['password', 'token', 'secret', 'card', 'pan', 'cvv'];
+
+  constructor(private readonly statEventWriteRepository: StatEventWriteRepository) {}
 
   async ingestEvent(dto: CreateStatEventDto) {
+    this.assertPayloadSafety(dto.payload);
+
     const occurredAt = new Date(dto.occurredAt);
 
     const values: Partial<StatEventEntity> = {
@@ -39,20 +39,30 @@ export class StatsIngestService {
       sourceSystem: dto.sourceSystem,
     };
 
-    const result = await this.statEventRepository
-      .createQueryBuilder()
-      .insert()
-      .into(StatEventEntity)
-      .values(values as never)
-      .orIgnore()
-      .execute();
-
-    const isDuplicate = result.identifiers.length === 0;
+    const isDuplicate = await this.statEventWriteRepository.insertIgnore(values);
 
     return {
       accepted: true,
       duplicate: isDuplicate,
       eventUuid: dto.eventUuid,
     };
+  }
+
+  private assertPayloadSafety(payload?: Record<string, unknown>): void {
+    if (!payload) return;
+    const queue: Array<Record<string, unknown>> = [payload];
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (!current) continue;
+
+      for (const [key, value] of Object.entries(current)) {
+        const normalizedKey = key.toLowerCase();
+        if (this.forbiddenPayloadKeyPatterns.some((pattern) => normalizedKey.includes(pattern))) {
+          throw new BadRequestException(`Payload key "${key}" is not allowed`);
+        }
+        if (value && typeof value === 'object' && !Array.isArray(value)) queue.push(value as Record<string, unknown>);
+      }
+    }
   }
 }

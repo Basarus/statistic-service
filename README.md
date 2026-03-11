@@ -1,6 +1,25 @@
 # statistic-service (NestJS + TypeScript + PostgreSQL)
 
 Statistics microservice scaffold with event storage and aggregation data model.
+<<<<<<< HEAD
+
+## Features
+
+- NestJS application bootstrap
+- PostgreSQL connection via TypeORM
+- Global request validation (`ValidationPipe`)
+- Swagger documentation (`/docs`)
+- Health endpoint (`GET /health`)
+- Internal ingestion endpoint (`POST /internal/events`) protected with `x-api-key`
+- Report APIs: `GET /reports/metrics`, `GET /reports/auth-methods`, `GET /reports/request-types`, `GET /widgets/current-month`
+- Business metrics APIs: `POST /internal/business-snapshots`, `GET /reports/business-snapshots`, `GET /reports/business/conversion`, `GET /reports/business/inactive-users`
+- Scheduled aggregation jobs: raw→daily (10 min), daily→monthly (hourly), raw cleanup (2 AM)
+- Data model entities for events, daily/monthly aggregates, metrics, and job state
+- TypeORM migration for `stat_event`, `stat_aggregate_daily`, `stat_aggregate_monthly`, `stat_metric`, `stat_job_state`
+- Event map documentation for monolith integration (`docs/event-map.md`)
+- Next iteration: partition `stat_event` by month to reduce raw-table maintenance costs
+=======
+>>>>>>> master
 
 ## Features
 
@@ -40,71 +59,27 @@ Statistics microservice scaffold with event storage and aggregation data model.
 ## Project setup
 
 ```bash
-$ yarn install
+cp .env.example .env
+npm install
+npm run start:dev
 ```
 
-## Compile and run the project
+## Environment
 
-```bash
-# development
-$ yarn run start
-
-# watch mode
-$ yarn run start:dev
-
-# production mode
-$ yarn run start:prod
+```env
+NODE_ENV=development
+PORT=3000
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=statistic_service
+INTERNAL_API_KEY=change-me
+AGGREGATION_RAW_TO_DAILY_BATCH_SIZE=5000
+AGGREGATION_DAILY_TO_MONTHLY_BATCH_SIZE=1000
+RAW_EVENTS_TTL_DAYS=90
 ```
+## PR reopen note
 
-## Run tests
+This commit adds a small README-only update to reopen and refresh the broken PR pipeline.
 
-```bash
-# unit tests
-$ yarn run test
-
-# e2e tests
-$ yarn run test:e2e
-
-# test coverage
-$ yarn run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ yarn install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

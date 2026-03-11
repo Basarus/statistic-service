@@ -4,6 +4,7 @@ import {
   ApiBody,
   ApiCreatedResponse,
   ApiHeader,
+  ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -20,9 +21,11 @@ export class StatsIngestController {
   @Post()
   @UseGuards(StatsIngestAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  @ApiHeader({ name: 'x-api-key', required: true })
+  @ApiOperation({ summary: 'Ingest internal monolith event (idempotent by eventUuid)' })
+  @ApiHeader({ name: 'x-api-key', required: true, description: 'Internal service API key' })
   @ApiBody({ type: CreateStatEventDto })
   @ApiCreatedResponse({
+    description: 'Event accepted. duplicate=true means eventUuid was already ingested.',
     schema: {
       example: {
         accepted: true,
@@ -31,7 +34,7 @@ export class StatsIngestController {
       },
     },
   })
-  @ApiBadRequestResponse({ description: 'Invalid payload' })
+  @ApiBadRequestResponse({ description: 'Invalid payload or forbidden payload keys' })
   @ApiUnauthorizedResponse({ description: 'Invalid internal API key' })
   async create(@Body() dto: CreateStatEventDto) {
     return this.statsIngestService.ingestEvent(dto);
