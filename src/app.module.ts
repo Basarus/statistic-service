@@ -31,7 +31,7 @@ import { StatsReportModule } from './modules/stats-report/stats-report.module';
         autoLoadEntities: true,
         synchronize: false,
         migrations: ['dist/database/migrations/*.js'],
-            }),
+      }),
     }),
     HealthModule,
     DictionaryModule,

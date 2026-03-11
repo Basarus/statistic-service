@@ -2,7 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import request from 'supertest';
+import * as request from 'supertest';
 
 import { StatEventEntity } from '../src/database/entities/stat-event.entity';
 import { StatsIngestAuthGuard } from '../src/modules/stats-ingest/stats-ingest.auth.guard';

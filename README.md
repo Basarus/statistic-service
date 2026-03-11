@@ -10,6 +10,7 @@ Statistics microservice scaffold with event storage and aggregation data model.
 - Swagger documentation (`/docs`)
 - Health endpoint (`GET /health`)
 - Internal ingestion endpoint (`POST /internal/events`) protected with `x-api-key`
+- Scheduled aggregation jobs: raw→daily (10 min), daily→monthly (hourly), raw cleanup (2 AM)
 - Data model entities for events, daily/monthly aggregates, metrics, and job state
 - TypeORM migration for `stat_event`, `stat_aggregate_daily`, `stat_aggregate_monthly`, `stat_metric`, `stat_job_state`
 - Event map documentation for monolith integration (`docs/event-map.md`)
@@ -33,4 +34,7 @@ DB_USER=postgres
 DB_PASSWORD=postgres
 DB_NAME=statistic_service
 INTERNAL_API_KEY=change-me
+AGGREGATION_RAW_TO_DAILY_BATCH_SIZE=5000
+AGGREGATION_DAILY_TO_MONTHLY_BATCH_SIZE=1000
+RAW_EVENTS_TTL_DAYS=90
 ```

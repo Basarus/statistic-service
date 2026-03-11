@@ -15,33 +15,35 @@ export class StatsIngestService {
   async ingestEvent(dto: CreateStatEventDto) {
     const occurredAt = new Date(dto.occurredAt);
 
+    const values: Partial<StatEventEntity> = {
+      eventUuid: dto.eventUuid,
+      eventName: dto.eventName,
+      eventCategory: dto.eventCategory,
+      occurredAt,
+      receivedAt: new Date(),
+      year: occurredAt.getUTCFullYear(),
+      month: occurredAt.getUTCMonth() + 1,
+      day: occurredAt.getUTCDate(),
+      hour: occurredAt.getUTCHours(),
+      organizationId: dto.organizationId,
+      userId: dto.userId ?? null,
+      accountId: null,
+      personalAccountId: dto.personalAccountId ?? null,
+      platform: dto.platform ?? null,
+      authMethod: dto.authMethod ?? null,
+      requestType: dto.requestType ?? null,
+      providerId: dto.providerId ?? null,
+      serviceType: dto.serviceType ?? null,
+      isSuccess: dto.isSuccess,
+      payload: (dto.payload ?? {}) as Record<string, unknown>,
+      sourceSystem: dto.sourceSystem,
+    };
+
     const result = await this.statEventRepository
       .createQueryBuilder()
       .insert()
       .into(StatEventEntity)
-      .values({
-        eventUuid: dto.eventUuid,
-        eventName: dto.eventName,
-        eventCategory: dto.eventCategory,
-        occurredAt,
-        receivedAt: new Date(),
-        year: occurredAt.getUTCFullYear(),
-        month: occurredAt.getUTCMonth() + 1,
-        day: occurredAt.getUTCDate(),
-        hour: occurredAt.getUTCHours(),
-        organizationId: dto.organizationId,
-        userId: dto.userId ?? null,
-        accountId: null,
-        personalAccountId: dto.personalAccountId ?? null,
-        platform: dto.platform ?? null,
-        authMethod: dto.authMethod ?? null,
-        requestType: dto.requestType ?? null,
-        providerId: dto.providerId ?? null,
-        serviceType: dto.serviceType ?? null,
-        isSuccess: dto.isSuccess,
-        payload: dto.payload ?? {},
-        sourceSystem: dto.sourceSystem,
-      })
+      .values(values as never)
       .orIgnore()
       .execute();
 

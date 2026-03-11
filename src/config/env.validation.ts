@@ -9,10 +9,17 @@ export function validateEnvironment(config: Record<string, unknown>) {
     }
   }
 
-  const dbPort = String(config.DB_PORT);
+  const numericVariables = [
+    ['DB_PORT', config.DB_PORT],
+    ['AGGREGATION_RAW_TO_DAILY_BATCH_SIZE', config.AGGREGATION_RAW_TO_DAILY_BATCH_SIZE],
+    ['AGGREGATION_DAILY_TO_MONTHLY_BATCH_SIZE', config.AGGREGATION_DAILY_TO_MONTHLY_BATCH_SIZE],
+    ['RAW_EVENTS_TTL_DAYS', config.RAW_EVENTS_TTL_DAYS],
+  ] as const;
 
-  if (!numberPattern.test(dbPort)) {
-    throw new Error('Environment variable DB_PORT must be numeric');
+  for (const [name, value] of numericVariables) {
+    if (value !== undefined && !numberPattern.test(String(value))) {
+      throw new Error(`Environment variable ${name} must be numeric`);
+    }
   }
 
   return config;

@@ -67,11 +67,11 @@ export class CreateStatisticsSchema1710000000000 implements MigrationInterface {
         date,
         organization_id,
         metric_code,
-        coalesce(dimension_platform, ''),
-        coalesce(dimension_auth_method, ''),
-        coalesce(dimension_request_type, ''),
-        coalesce(dimension_provider_id::text, ''),
-        coalesce(dimension_service_type, '')
+        dimension_platform,
+        dimension_auth_method,
+        dimension_request_type,
+        dimension_provider_id,
+        dimension_service_type
       )
     `);
     await queryRunner.query('CREATE INDEX IF NOT EXISTS idx_stat_aggregate_daily_date ON stat_aggregate_daily(date)');
@@ -105,11 +105,11 @@ export class CreateStatisticsSchema1710000000000 implements MigrationInterface {
         month,
         organization_id,
         metric_code,
-        coalesce(dimension_platform, ''),
-        coalesce(dimension_auth_method, ''),
-        coalesce(dimension_request_type, ''),
-        coalesce(dimension_provider_id::text, ''),
-        coalesce(dimension_service_type, '')
+        dimension_platform,
+        dimension_auth_method,
+        dimension_request_type,
+        dimension_provider_id,
+        dimension_service_type
       )
     `);
     await queryRunner.query('CREATE INDEX IF NOT EXISTS idx_stat_aggregate_monthly_ym ON stat_aggregate_monthly(year, month)');
