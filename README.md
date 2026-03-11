@@ -1,9 +1,21 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# statistic-service (NestJS + TypeScript + PostgreSQL)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Statistics microservice scaffold with event storage and aggregation data model.
+
+## Features
+
+- NestJS application bootstrap
+- PostgreSQL connection via TypeORM
+- Global request validation (`ValidationPipe`)
+- Swagger documentation (`/docs`)
+- Health endpoint (`GET /health`)
+- Internal ingestion endpoint (`POST /internal/events`) protected with `x-api-key`
+- Report APIs: `GET /reports/metrics`, `GET /reports/auth-methods`, `GET /reports/request-types`, `GET /widgets/current-month`
+- Business metrics APIs: `POST /internal/business-snapshots`, `GET /reports/business-snapshots`, `GET /reports/business/conversion`, `GET /reports/business/inactive-users`
+- Scheduled aggregation jobs: raw→daily (10 min), daily→monthly (hourly), raw cleanup (2 AM)
+- Data model entities for events, daily/monthly aggregates, metrics, and job state
+- TypeORM migration for `stat_event`, `stat_aggregate_daily`, `stat_aggregate_monthly`, `stat_metric`, `stat_job_state`
+- Event map documentation for monolith integration (`docs/event-map.md`)
 
   <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
     <p align="center">
