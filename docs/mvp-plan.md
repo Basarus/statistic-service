@@ -155,3 +155,36 @@
 - В агрегатах введена нормализация nullable dimension-полей (`organization_id`, `request_type`, `payment_type`) в sentinel-значения для корректного `ON CONFLICT`.
 - `aggregate-events-incremental` защищен транзакционным advisory lock, чтобы не допустить параллельного двойного учета.
 - Точный distinct по месяцу по-прежнему обеспечивается через `recompute_monthly_metrics_from_raw`.
+
+
+## 13) Слой бизнес-отчетов (read contract)
+
+Добавлены объекты для state-based отчетности и стабильного чтения:
+
+- `stats.state_daily_snapshots` + `stats.upsert_state_daily_snapshot(...)` для ежедневных срезов состояния.
+- View для event-based отчетов:
+  - `stats.vw_monthly_org_logins_channels`
+  - `stats.vw_monthly_auth_method_stats`
+  - `stats.vw_monthly_payment_type_stats`
+  - `stats.vw_monthly_request_type_stats`
+- `stats.vw_state_metrics_latest` для получения последнего доступного state-среза по организации.
+
+Контракт по источникам метрик закреплен в `docs/business-reports-contract.md`.
+
+
+## 14) Оркестрация pipeline и аудит джоб
+
+Добавлен runtime-контур для планировщика:
+
+- `stats.job_runs` — таблица аудита запусков.
+- `stats.run_pipeline_tick(...)` — единый orchestration-вызов (incremental + reconcile + rollup + cleanup).
+- `stats.vw_job_runs_latest` — быстрый мониторинг последнего статуса джоб.
+
+Операционный порядок и примеры вызова: `docs/pipeline-operations.md`.
+
+
+## 15) Исправления консистентности (runtime)
+
+- Устранен риск перезаписи точных monthly-метрик: в `run_pipeline_tick` используется только `recompute_monthly_metrics_from_raw`.
+- Инкрементальная агрегация фиксирует курсор `last_event_id` атомарно на основе фактически обработанного chunk.
+- Для `job_runs.status` добавлено ограничение допустимых значений (`started`, `success`, `failed`).
