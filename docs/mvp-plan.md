@@ -136,3 +136,15 @@
   - `stats.cleanup_raw_events(retention_days)`
 
 Эти функции можно дергать из NestJS scheduler-джоб или вручную через admin endpoint.
+
+
+## 11) Практический pipeline в БД (реализация)
+
+Добавлены SQL-примитивы, которые можно вызывать напрямую из NestJS:
+
+- `stats.ingest_event(...)` — прием и идемпотентная запись события.
+- `stats.aggregate_events_incremental(job_name, chunk_size)` — инкрементальная агрегация raw -> daily с `aggregation_state`.
+- `stats.rollup_monthly_from_daily(month_from, month_to)` — быстрый rollup daily -> monthly.
+- `stats.vw_current_month_org_channel_logins` — пример готовой витрины для чтения.
+
+Операционный порядок вызовов описан в `docs/aggregation-runbook.md`.
