@@ -1,87 +1,31 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
 
-import { StatBusinessSnapshotEntity } from '../../database/entities/stat-business-snapshot.entity';
 import { GetBusinessSnapshotsQueryDto } from './dto/get-business-snapshots-query.dto';
 import { GetConversionQueryDto } from './dto/get-conversion-query.dto';
 import { UpsertBusinessSnapshotDto } from './dto/upsert-business-snapshot.dto';
+import { StatsBusinessRepository } from './repositories/stats-business.repository';
 
 @Injectable()
 export class StatsBusinessService {
   private readonly logger = new Logger(StatsBusinessService.name);
 
-  constructor(
-    private readonly dataSource: DataSource,
-    @InjectRepository(StatBusinessSnapshotEntity)
-    private readonly snapshotRepository: Repository<StatBusinessSnapshotEntity>,
-  ) {}
+  constructor(private readonly statsBusinessRepository: StatsBusinessRepository) {}
 
   async upsertSnapshot(dto: UpsertBusinessSnapshotDto) {
-    await this.dataSource.query(
-      `
-      INSERT INTO stat_business_snapshot (
-        snapshot_date,
-        organization_id,
-        metric_code,
-        dimension_key,
-        value_total,
-        payload,
-        created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, now())
-      ON CONFLICT (
-        snapshot_date,
-        organization_id,
-        metric_code,
-        (COALESCE(dimension_key, ''))
-      )
-      DO UPDATE SET
-        value_total = EXCLUDED.value_total,
-        payload = EXCLUDED.payload,
-        created_at = now()
-      `,
-      [
-        dto.snapshotDate,
-        dto.organizationId,
-        dto.metricCode,
-        dto.dimensionKey ?? null,
-        dto.valueTotal,
-        dto.payload ?? null,
-      ],
-    );
-
+    await this.statsBusinessRepository.upsertSnapshot({
+      snapshotDate: dto.snapshotDate,
+      organizationId: dto.organizationId,
+      metricCode: dto.metricCode,
+      dimensionKey: dto.dimensionKey ?? null,
+      valueTotal: dto.valueTotal,
+      payload: dto.payload ?? null,
+    });
     return { accepted: true };
   }
 
   async getSnapshots(query: GetBusinessSnapshotsQueryDto) {
-    const qb = this.snapshotRepository
-      .createQueryBuilder('s')
-      .select('s.snapshotDate', 'snapshotDate')
-      .addSelect('s.metricCode', 'metricCode')
-      .addSelect('s.dimensionKey', 'dimensionKey')
-      .addSelect('s.valueTotal', 'valueTotal')
-      .addSelect('s.payload', 'payload')
-      .where('s.organizationId = :organizationId', { organizationId: query.organizationId })
-      .andWhere('s.metricCode = :metricCode', { metricCode: query.metricCode })
-      .andWhere('s.snapshotDate BETWEEN :dateFrom AND :dateTo', {
-        dateFrom: query.dateFrom,
-        dateTo: query.dateTo,
-      })
-      .orderBy('s.snapshotDate', 'ASC');
-
-    if (query.dimensionKey) {
-      qb.andWhere('s.dimensionKey = :dimensionKey', { dimensionKey: query.dimensionKey });
-    }
-
-    const rows = (await qb.getRawMany()) as Array<{
-      snapshotDate: string;
-      metricCode: string;
-      dimensionKey: string | null;
-      valueTotal: string;
-      payload: Record<string, unknown> | null;
-    }>;
-
+    const rows = await this.statsBusinessRepository.findSnapshots(query);
     return rows.map((row) => ({
       snapshotDate: row.snapshotDate,
       metricCode: row.metricCode,
@@ -92,22 +36,8 @@ export class StatsBusinessService {
   }
 
   async getConversion(query: GetConversionQueryDto) {
-    const rows = (await this.dataSource.query(
-      `
-      SELECT event_name, COUNT(DISTINCT user_id)::bigint AS users
-      FROM stat_event
-      WHERE organization_id = $1
-        AND occurred_at >= $2
-        AND occurred_at <= $3
-        AND user_id IS NOT NULL
-        AND event_name IN ('user.created', 'account.linked', 'auth.login.success', 'payment.success')
-      GROUP BY event_name
-      `,
-      [query.organizationId, query.dateFrom, query.dateTo],
-    )) as Array<{ event_name: string; users: string }>;
-
+    const rows = await this.statsBusinessRepository.getConversionRows(query.organizationId, query.dateFrom, query.dateTo);
     const toNumber = (eventName: string) => Number(rows.find((row) => row.event_name === eventName)?.users ?? 0);
-
     return {
       registeredUsers: toNumber('user.created'),
       linkedAccountsUsers: toNumber('account.linked'),
@@ -117,17 +47,7 @@ export class StatsBusinessService {
   }
 
   async getLatestInactiveUsers(organizationId: number) {
-    const row = (await this.snapshotRepository
-      .createQueryBuilder('s')
-      .select('s.snapshotDate', 'snapshotDate')
-      .addSelect('s.valueTotal', 'valueTotal')
-      .where('s.organizationId = :organizationId', { organizationId })
-      .andWhere('s.metricCode = :metricCode', { metricCode: 'users_inactive_6m' })
-      .orderBy('s.snapshotDate', 'DESC')
-      .addOrderBy('s.createdAt', 'DESC')
-      .limit(1)
-      .getRawOne()) as { snapshotDate: string; valueTotal: string } | null;
-
+    const row = await this.statsBusinessRepository.getLatestInactiveUsers(organizationId);
     return {
       snapshotDate: row?.snapshotDate ?? null,
       inactiveUsers: Number(row?.valueTotal ?? 0),
@@ -137,34 +57,7 @@ export class StatsBusinessService {
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async buildInactiveUsersSnapshot(): Promise<void> {
     try {
-      await this.dataSource.query(`
-        INSERT INTO stat_business_snapshot (
-          snapshot_date,
-          organization_id,
-          metric_code,
-          dimension_key,
-          value_total,
-          payload,
-          created_at
-        )
-        SELECT
-          now()::date,
-          organization_id,
-          'users_inactive_6m',
-          null,
-          COUNT(*)::bigint,
-          null,
-          now()
-        FROM (
-          SELECT organization_id, user_id, MAX(occurred_at) AS last_activity
-          FROM stat_event
-          WHERE user_id IS NOT NULL
-          GROUP BY organization_id, user_id
-        ) x
-        WHERE last_activity < now() - interval '6 months'
-        GROUP BY organization_id
-      `);
-
+      await this.statsBusinessRepository.buildInactiveUsersSnapshot();
       this.logger.log('users_inactive_6m snapshot built');
     } catch (error) {
       this.logger.error('users_inactive_6m snapshot failed', error instanceof Error ? error.stack : undefined);
@@ -175,30 +68,7 @@ export class StatsBusinessService {
   @Cron(CronExpression.EVERY_HOUR)
   async buildPaymentTypeSnapshot(): Promise<void> {
     try {
-      await this.dataSource.query(`
-        INSERT INTO stat_business_snapshot (
-          snapshot_date,
-          organization_id,
-          metric_code,
-          dimension_key,
-          value_total,
-          payload,
-          created_at
-        )
-        SELECT
-          now()::date,
-          organization_id,
-          'payment_type_count',
-          COALESCE(payload->>'paymentType', 'unknown'),
-          COUNT(*)::bigint,
-          null,
-          now()
-        FROM stat_event
-        WHERE event_name = 'payment.success'
-          AND occurred_at >= date_trunc('day', now())
-        GROUP BY organization_id, COALESCE(payload->>'paymentType', 'unknown')
-      `);
-
+      await this.statsBusinessRepository.buildPaymentTypeSnapshot();
       this.logger.log('payment_type_count snapshot built');
     } catch (error) {
       this.logger.error('payment_type_count snapshot failed', error instanceof Error ? error.stack : undefined);
@@ -209,30 +79,7 @@ export class StatsBusinessService {
   @Cron(CronExpression.EVERY_HOUR)
   async buildAuthMethodSnapshot(): Promise<void> {
     try {
-      await this.dataSource.query(`
-        INSERT INTO stat_business_snapshot (
-          snapshot_date,
-          organization_id,
-          metric_code,
-          dimension_key,
-          value_total,
-          payload,
-          created_at
-        )
-        SELECT
-          now()::date,
-          organization_id,
-          'auth_method_count',
-          COALESCE(auth_method, 'other'),
-          COUNT(*)::bigint,
-          null,
-          now()
-        FROM stat_event
-        WHERE event_name IN ('auth.login.success', 'auth.login.failed')
-          AND occurred_at >= date_trunc('day', now())
-        GROUP BY organization_id, COALESCE(auth_method, 'other')
-      `);
-
+      await this.statsBusinessRepository.buildAuthMethodSnapshot();
       this.logger.log('auth_method_count snapshot built');
     } catch (error) {
       this.logger.error('auth_method_count snapshot failed', error instanceof Error ? error.stack : undefined);

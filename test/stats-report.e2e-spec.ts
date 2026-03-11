@@ -129,6 +129,11 @@ describe('Stats report (e2e)', () => {
       ]);
   });
 
+
+  it('GET /widgets/current-month returns 400 for invalid organizationId', () => {
+    return request(app.getHttpServer()).get('/widgets/current-month').query({ organizationId: 'nan' }).expect(400);
+  });
+
   it('GET /reports/metrics returns 400 for invalid query', () => {
     return request(app.getHttpServer())
       .get('/reports/metrics')

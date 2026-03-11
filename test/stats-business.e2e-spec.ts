@@ -103,6 +103,19 @@ describe('Stats business (e2e)', () => {
       .expect({ snapshotDate: '2026-03-11', inactiveUsers: 12 });
   });
 
+
+  it('POST /internal/business-snapshots returns 401 without api key', () => {
+    return request(app.getHttpServer())
+      .post('/internal/business-snapshots')
+      .send({
+        snapshotDate: '2026-03-11',
+        organizationId: 10,
+        metricCode: 'users_without_personal_account',
+        valueTotal: 5,
+      })
+      .expect(401);
+  });
+
   it('POST /internal/business-snapshots returns 400 for invalid payload', () => {
     return request(app.getHttpServer())
       .post('/internal/business-snapshots')
