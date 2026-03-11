@@ -148,3 +148,10 @@
 - `stats.vw_current_month_org_channel_logins` — пример готовой витрины для чтения.
 
 Операционный порядок вызовов описан в `docs/aggregation-runbook.md`.
+
+
+## 12) Технические гарантии консистентности
+
+- В агрегатах введена нормализация nullable dimension-полей (`organization_id`, `request_type`, `payment_type`) в sentinel-значения для корректного `ON CONFLICT`.
+- `aggregate-events-incremental` защищен транзакционным advisory lock, чтобы не допустить параллельного двойного учета.
+- Точный distinct по месяцу по-прежнему обеспечивается через `recompute_monthly_metrics_from_raw`.

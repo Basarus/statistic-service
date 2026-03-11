@@ -83,3 +83,14 @@ SELECT *
 FROM stats.vw_current_month_org_channel_logins
 WHERE organization_id = $1;
 ```
+
+
+## 7) Нормализация nullable измерений
+
+Чтобы `UPSERT` в агрегаты был детерминированным, nullable измерения нормализуются:
+
+- `organization_id` -> `00000000-0000-0000-0000-000000000000`
+- `request_type` -> `''`
+- `payment_type` -> `''`
+
+Это выполняется внутри SQL-функций агрегации, поэтому scheduler не должен делать дополнительную нормализацию.
