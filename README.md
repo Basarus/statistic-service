@@ -1,6 +1,6 @@
 # statistic-service (NestJS + TypeScript + PostgreSQL)
 
-Base scaffold for the statistics microservice.
+Statistics microservice scaffold with event storage and aggregation data model.
 
 ## Features
 
@@ -9,7 +9,8 @@ Base scaffold for the statistics microservice.
 - Global request validation (`ValidationPipe`)
 - Swagger documentation (`/docs`)
 - Health endpoint (`GET /health`)
-- Base module structure for ingest/aggregate/report flows
+- Data model entities for events, daily/monthly aggregates, metrics, and job state
+- TypeORM migration for `stat_event`, `stat_aggregate_daily`, `stat_aggregate_monthly`, `stat_metric`, `stat_job_state`
 
 ## Run
 
