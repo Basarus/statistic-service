@@ -49,12 +49,12 @@ export class CreateStatEventDto {
 
   @ApiPropertyOptional({ example: '8f9638ce-1451-4fd6-8f5e-a44ac9d7ecf5' })
   @IsOptional()
-  @IsString()
+  @IsUUID()
   userId?: string;
 
   @ApiPropertyOptional({ example: 'f7818ca8-9c87-47a5-8799-5f938cfc0878' })
   @IsOptional()
-  @IsString()
+  @IsUUID()
   personalAccountId?: string;
 
   @ApiPropertyOptional({ enum: PlatformType })

@@ -124,6 +124,25 @@ describe('Stats ingest (e2e)', () => {
       .expect(400);
   });
 
+
+  it('POST /internal/events returns 400 for non-uuid userId/personalAccountId', () => {
+    return request(app.getHttpServer())
+      .post('/internal/events')
+      .set('x-api-key', 'test-internal-key')
+      .send({
+        eventUuid: '1e03ad03-c0a0-4c8f-bcb1-4bc0f7651980',
+        eventName: 'auth.login.success',
+        eventCategory: 'auth',
+        occurredAt: '2026-03-11T10:00:00.000Z',
+        organizationId: 123,
+        isSuccess: true,
+        sourceSystem: 'lka-monolith',
+        userId: 'not-a-uuid',
+        personalAccountId: 'bad-account-id',
+      })
+      .expect(400);
+  });
+
   it('POST /internal/events returns 400 for invalid payload', () => {
     return request(app.getHttpServer())
       .post('/internal/events')

@@ -104,6 +104,8 @@ export class StatsBusinessRepository {
         ) x
         WHERE last_activity < now() - interval '6 months'
         GROUP BY organization_id
+        ON CONFLICT (snapshot_date, organization_id, metric_code, (COALESCE(dimension_key, '')))
+        DO UPDATE SET value_total = EXCLUDED.value_total, payload = EXCLUDED.payload, created_at = now()
       `)
       .then(() => undefined);
   }
@@ -116,6 +118,8 @@ export class StatsBusinessRepository {
         FROM stat_event
         WHERE event_name = 'payment.success' AND occurred_at >= date_trunc('day', now())
         GROUP BY organization_id, COALESCE(payload->>'paymentType', 'unknown')
+        ON CONFLICT (snapshot_date, organization_id, metric_code, (COALESCE(dimension_key, '')))
+        DO UPDATE SET value_total = EXCLUDED.value_total, payload = EXCLUDED.payload, created_at = now()
       `)
       .then(() => undefined);
   }
@@ -128,6 +132,8 @@ export class StatsBusinessRepository {
         FROM stat_event
         WHERE event_name IN ('auth.login.success', 'auth.login.failed') AND occurred_at >= date_trunc('day', now())
         GROUP BY organization_id, COALESCE(auth_method, 'other')
+        ON CONFLICT (snapshot_date, organization_id, metric_code, (COALESCE(dimension_key, '')))
+        DO UPDATE SET value_total = EXCLUDED.value_total, payload = EXCLUDED.payload, created_at = now()
       `)
       .then(() => undefined);
   }
