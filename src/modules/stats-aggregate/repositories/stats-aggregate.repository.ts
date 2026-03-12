@@ -28,7 +28,7 @@ export class StatsAggregateRepository {
         ORDER BY e.occurred_at ASC, e.id ASC
         LIMIT $3
       ),
-      aggregated AS (
+      aggregated_totals AS (
         SELECT
           metric_date,
           organization_id,
@@ -38,22 +38,167 @@ export class StatsAggregateRepository {
           dimension_request_type,
           dimension_provider_id,
           dimension_service_type,
-          COUNT(*)::bigint AS value_total,
-          COUNT(DISTINCT user_id)::bigint AS value_unique_users,
-          COUNT(DISTINCT personal_account_id)::bigint AS value_unique_accounts
+          COUNT(*)::bigint AS value_total
         FROM source_events
         GROUP BY metric_date, organization_id, metric_code, dimension_platform, dimension_auth_method, dimension_request_type, dimension_provider_id, dimension_service_type
+      ),
+      inserted_users AS (
+        INSERT INTO stat_aggregate_daily_unique_user (
+          date,
+          organization_id,
+          metric_code,
+          dimension_platform,
+          dimension_auth_method,
+          dimension_request_type,
+          dimension_provider_id,
+          dimension_service_type,
+          user_id
+        )
+        SELECT DISTINCT
+          metric_date,
+          organization_id,
+          metric_code,
+          dimension_platform,
+          dimension_auth_method,
+          dimension_request_type,
+          dimension_provider_id,
+          dimension_service_type,
+          user_id
+        FROM source_events
+        WHERE user_id IS NOT NULL
+        ON CONFLICT DO NOTHING
+        RETURNING
+          date,
+          organization_id,
+          metric_code,
+          dimension_platform,
+          dimension_auth_method,
+          dimension_request_type,
+          dimension_provider_id,
+          dimension_service_type
+      ),
+      aggregated_new_users AS (
+        SELECT
+          date,
+          organization_id,
+          metric_code,
+          dimension_platform,
+          dimension_auth_method,
+          dimension_request_type,
+          dimension_provider_id,
+          dimension_service_type,
+          COUNT(*)::bigint AS value_unique_users
+        FROM inserted_users
+        GROUP BY date, organization_id, metric_code, dimension_platform, dimension_auth_method, dimension_request_type, dimension_provider_id, dimension_service_type
+      ),
+      inserted_accounts AS (
+        INSERT INTO stat_aggregate_daily_unique_account (
+          date,
+          organization_id,
+          metric_code,
+          dimension_platform,
+          dimension_auth_method,
+          dimension_request_type,
+          dimension_provider_id,
+          dimension_service_type,
+          personal_account_id
+        )
+        SELECT DISTINCT
+          metric_date,
+          organization_id,
+          metric_code,
+          dimension_platform,
+          dimension_auth_method,
+          dimension_request_type,
+          dimension_provider_id,
+          dimension_service_type,
+          personal_account_id
+        FROM source_events
+        WHERE personal_account_id IS NOT NULL
+        ON CONFLICT DO NOTHING
+        RETURNING
+          date,
+          organization_id,
+          metric_code,
+          dimension_platform,
+          dimension_auth_method,
+          dimension_request_type,
+          dimension_provider_id,
+          dimension_service_type
+      ),
+      aggregated_new_accounts AS (
+        SELECT
+          date,
+          organization_id,
+          metric_code,
+          dimension_platform,
+          dimension_auth_method,
+          dimension_request_type,
+          dimension_provider_id,
+          dimension_service_type,
+          COUNT(*)::bigint AS value_unique_accounts
+        FROM inserted_accounts
+        GROUP BY date, organization_id, metric_code, dimension_platform, dimension_auth_method, dimension_request_type, dimension_provider_id, dimension_service_type
       )
       INSERT INTO stat_aggregate_daily (
-        date, organization_id, metric_code, dimension_platform, dimension_auth_method, dimension_request_type, dimension_provider_id, dimension_service_type,
-        value_total, value_unique_users, value_unique_accounts, created_at, updated_at
+        date,
+        organization_id,
+        metric_code,
+        dimension_platform,
+        dimension_auth_method,
+        dimension_request_type,
+        dimension_provider_id,
+        dimension_service_type,
+        value_total,
+        value_unique_users,
+        value_unique_accounts,
+        created_at,
+        updated_at
       )
-      SELECT metric_date, organization_id, metric_code, dimension_platform, dimension_auth_method, dimension_request_type, dimension_provider_id, dimension_service_type,
-        value_total, value_unique_users, value_unique_accounts, now(), now()
-      FROM aggregated
+      SELECT
+        t.metric_date,
+        t.organization_id,
+        t.metric_code,
+        t.dimension_platform,
+        t.dimension_auth_method,
+        t.dimension_request_type,
+        t.dimension_provider_id,
+        t.dimension_service_type,
+        t.value_total,
+        COALESCE(u.value_unique_users, 0),
+        COALESCE(a.value_unique_accounts, 0),
+        now(),
+        now()
+      FROM aggregated_totals t
+      LEFT JOIN aggregated_new_users u
+        ON u.date = t.metric_date
+       AND u.organization_id = t.organization_id
+       AND u.metric_code = t.metric_code
+       AND u.dimension_platform IS NOT DISTINCT FROM t.dimension_platform
+       AND u.dimension_auth_method IS NOT DISTINCT FROM t.dimension_auth_method
+       AND u.dimension_request_type IS NOT DISTINCT FROM t.dimension_request_type
+       AND u.dimension_provider_id IS NOT DISTINCT FROM t.dimension_provider_id
+       AND u.dimension_service_type IS NOT DISTINCT FROM t.dimension_service_type
+      LEFT JOIN aggregated_new_accounts a
+        ON a.date = t.metric_date
+       AND a.organization_id = t.organization_id
+       AND a.metric_code = t.metric_code
+       AND a.dimension_platform IS NOT DISTINCT FROM t.dimension_platform
+       AND a.dimension_auth_method IS NOT DISTINCT FROM t.dimension_auth_method
+       AND a.dimension_request_type IS NOT DISTINCT FROM t.dimension_request_type
+       AND a.dimension_provider_id IS NOT DISTINCT FROM t.dimension_provider_id
+       AND a.dimension_service_type IS NOT DISTINCT FROM t.dimension_service_type
       ON CONFLICT (
-        date, organization_id, metric_code, dimension_platform, dimension_auth_method, dimension_request_type, dimension_provider_id, dimension_service_type
-      ) DO UPDATE SET
+        date,
+        organization_id,
+        metric_code,
+        dimension_platform,
+        dimension_auth_method,
+        dimension_request_type,
+        dimension_provider_id,
+        dimension_service_type
+      )
+      DO UPDATE SET
         value_total = stat_aggregate_daily.value_total + EXCLUDED.value_total,
         value_unique_users = stat_aggregate_daily.value_unique_users + EXCLUDED.value_unique_users,
         value_unique_accounts = stat_aggregate_daily.value_unique_accounts + EXCLUDED.value_unique_accounts,
@@ -99,13 +244,25 @@ export class StatsAggregateRepository {
 
     await this.dataSource.query(
       `
-      INSERT INTO stat_aggregate_monthly (
-        year, month, organization_id, metric_code, dimension_platform, dimension_auth_method, dimension_request_type, dimension_provider_id,
-        dimension_service_type, value_total, value_unique_users, value_unique_accounts, created_at, updated_at
+      WITH monthly_events AS (
+        SELECT
+          e.organization_id,
+          m.code AS metric_code,
+          e.platform AS dimension_platform,
+          e.auth_method AS dimension_auth_method,
+          e.request_type AS dimension_request_type,
+          e.provider_id AS dimension_provider_id,
+          e.service_type AS dimension_service_type,
+          e.user_id,
+          e.personal_account_id
+        FROM stat_event e
+        INNER JOIN stat_metric m ON m.event_name = e.event_name AND m.is_active = true
+        WHERE EXTRACT(YEAR FROM e.occurred_at)::int = $1
+          AND EXTRACT(MONTH FROM e.occurred_at)::int = $2
       )
-      SELECT
-        EXTRACT(YEAR FROM date)::int,
-        EXTRACT(MONTH FROM date)::int,
+      INSERT INTO stat_aggregate_monthly (
+        year,
+        month,
         organization_id,
         metric_code,
         dimension_platform,
@@ -113,12 +270,28 @@ export class StatsAggregateRepository {
         dimension_request_type,
         dimension_provider_id,
         dimension_service_type,
-        SUM(value_total)::bigint,
-        SUM(value_unique_users)::bigint,
-        SUM(value_unique_accounts)::bigint,
-        now(), now()
-      FROM stat_aggregate_daily
-      WHERE EXTRACT(YEAR FROM date)::int = $1 AND EXTRACT(MONTH FROM date)::int = $2
+        value_total,
+        value_unique_users,
+        value_unique_accounts,
+        created_at,
+        updated_at
+      )
+      SELECT
+        $1,
+        $2,
+        organization_id,
+        metric_code,
+        dimension_platform,
+        dimension_auth_method,
+        dimension_request_type,
+        dimension_provider_id,
+        dimension_service_type,
+        COUNT(*)::bigint,
+        COUNT(DISTINCT user_id)::bigint,
+        COUNT(DISTINCT personal_account_id)::bigint,
+        now(),
+        now()
+      FROM monthly_events
       GROUP BY organization_id, metric_code, dimension_platform, dimension_auth_method, dimension_request_type, dimension_provider_id, dimension_service_type
       `,
       [year, month],
@@ -127,7 +300,7 @@ export class StatsAggregateRepository {
 
   async getMaxDailyUpdatedAt(lastProcessedAtIso: string): Promise<string | null> {
     const rows = (await this.dataSource.query(
-      `SELECT MAX(updated_at) AS max_updated_at FROM stat_aggregate_daily WHERE updated_at > $1`,
+      'SELECT MAX(updated_at) AS max_updated_at FROM stat_aggregate_daily WHERE updated_at > $1',
       [lastProcessedAtIso],
     )) as Array<{ max_updated_at: string | null }>;
     return rows[0]?.max_updated_at ?? null;

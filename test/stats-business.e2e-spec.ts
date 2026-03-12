@@ -1,7 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest';
+import * as request from 'supertest';
 
 import { StatsBusinessController } from '../src/modules/stats-business/stats-business.controller';
 import { StatsBusinessService } from '../src/modules/stats-business/stats-business.service';
